@@ -20,8 +20,9 @@ import {
 class App extends React.Component {
     constructor(props) {
         super(props);
-        //this.updateData = this.updateData.bind(this);
-        this.state = { circles: new Array(10), articleData: new Array(0), height: 300, width: 600, maxDate: 0, minDate: null };
+        //height and width dont need to be state!!
+        this.state = { circles: new Array(10), articleData: new Array(0), maxDate: 0, minDate: null };
+        
         //get auth token & request data from 
         (async () => {
             let url = "https://www.reddit.com/api/v1/access_token";
@@ -38,10 +39,10 @@ class App extends React.Component {
                 var data = await response.json();
 
                 try {
-                    var articles = await fetch("https://oauth.reddit.com/r/news/search.json?sort=top&limit=35&restrict_sr=on&syntax=cloudsearch", { headers: { 'Authorization': 'bearer ' + data.access_token } });
+                    var articles = await fetch("https://oauth.reddit.com/r/news/search.json?sort=top&t=year&limit=35&restrict_sr=on&syntax=cloudsearch", { headers: { 'Authorization': 'bearer ' + data.access_token } });
                     var articleData = await articles.json();
                     var finalData = articleData.data.children.map(r => {
-                        return Object.assign({}, { "date": r.data["created_utc"] * 1000, "url": r.data["url"], "ups": r.data["ups"], "title": r.data["title"] });
+                        return Object.assign({}, { "date": new Date(r.data["created_utc"] * 1000), "url": r.data["url"], "ups": r.data["ups"], "title": r.data["title"] });
                     });
 
                     //console.log(finalData);
@@ -59,32 +60,37 @@ class App extends React.Component {
         })();
     }
 
+
     render() {
         var xAxis = () => {},
-            yAxis = () => {};
+            yAxis = () => {},
+            width = 600,
+            height = 80,
+            maxSize = 30,
+            xScale = () => {},
+            yScale = () => {};
 
-        if(this.state.articleData){
-            console.log("building the axis!")
-            const xScale = d3ScaleTime()
-                .domain(d3ArrayExtent(this.state.articleData, r=> new Date(r.date/1000)))
-                .range([0, this.state.width]);
+
+        if(this.state.minDate && this.state.maxDate){
+            console.log("building the axis!",d3ArrayExtent(this.state.articleData, r=> r.ups) )
+             xScale = d3ScaleTime()
+                .domain(d3ArrayExtent(this.state.articleData, r=> r.date))
+                .range([0, width]);
     
-            const yScale = d3ScaleLinear()
+             yScale = d3ScaleLinear()
                 .domain(d3ArrayExtent(this.state.articleData, r=> r.ups))
-                .range([this.state.height, 0]);
+                .range([0, maxSize]);
     
-            const selectScaledX = datum => xScale(selectX(datum));
-            const selectScaledY = datum => yScale(selectY(datum));
-            // ADD:
-            // Add an axis for our x scale which has half as many ticks as there are rows in the data set.
+            //const selectScaledX = datum => xScale(selectX(datum));
+            //const selectScaledY = datum => yScale(selectY(datum));
+            
             xAxis = d3AxisBottom()
             .scale(xScale)
-            .ticks(this.state.articleData.length / 2)
             .tickFormat(d3timeFormat("%B"));
             // Add an axis for our y scale that has 3 ticks (FIXME: we should probably make number of ticks per axis a prop).
-            yAxis = d3AxisLeft()
-            .scale(yScale)
-            .ticks(3);
+            //yAxis = d3AxisLeft()
+            //.scale(yScale)
+            //.ticks(3);
         }
         
 
@@ -93,12 +99,12 @@ class App extends React.Component {
               
                 
                 {(this.state.articleData) && 
-                    <svg height={this.state.height} width={this.state.width} >
+                    <svg height={height} width={width} >
                         <g className="xAxis" ref={node => d3Select(node).call(xAxis)} />
                     </svg>
                 }
             
-            <Circles {...this.state} />
+            <Circles {...Object.assign({},this.state, {"width": width, "height": height, "xScale":(v)=>{return xScale(v)}, "yScale":(v)=>{return yScale(v)}      })} />
         </div>);
     }
 }

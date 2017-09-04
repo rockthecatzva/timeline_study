@@ -1,6 +1,5 @@
 import React from 'react';
 import { render } from 'react-dom';
-import Circles from './TimelineCircles.js'
 let CryptoJS = require("crypto-js");
 import { extent as d3ArrayExtent } from 'd3-array';
 import {
@@ -10,9 +9,13 @@ import {
 import {
     axisBottom as d3AxisBottom,
     axisLeft as d3AxisLeft,
-  } from 'd3-axis';
-  import { select as d3Select } from 'd3-selection';
-  import {timeFormat as d3timeFormat} from 'd3-time-format';
+} from 'd3-axis';
+import { select } from 'd3-selection';
+import { timeFormat as d3timeFormat } from 'd3-time-format';
+
+
+import Circles from './TimelineCircles.js'
+import CircleGrid from './TimelineCircleGrid.js'
 
 
 
@@ -21,8 +24,8 @@ class App extends React.Component {
     constructor(props) {
         super(props);
         //height and width dont need to be state!!
-        this.state = { circles: new Array(10), articleData: new Array(0), maxDate: 0, minDate: null };
-        
+        this.state = { articleData: new Array(0) };
+
         //get auth token & request data from 
         (async () => {
             let url = "https://www.reddit.com/api/v1/access_token";
@@ -47,9 +50,7 @@ class App extends React.Component {
 
                     //console.log(finalData);
                     this.setState({
-                        "articleData": finalData,
-                        "maxDate": Math.max.apply(null, finalData.map(d => { return d["date"] })),
-                        "minDate": Math.min.apply(null, finalData.map(d => { return d["date"] }))
+                        "articleData": finalData
                     });
                 } catch (f) {
                     console.log("the auth worked, but request for data failed", f);
@@ -62,49 +63,30 @@ class App extends React.Component {
 
 
     render() {
-        var xAxis = () => {},
-            yAxis = () => {},
-            width = 600,
-            height = 80,
-            maxSize = 30,
-            xScale = () => {},
-            yScale = () => {};
-
-
-        if(this.state.minDate && this.state.maxDate){
-            console.log("building the axis!",d3ArrayExtent(this.state.articleData, r=> r.ups) )
-             xScale = d3ScaleTime()
-                .domain(d3ArrayExtent(this.state.articleData, r=> r.date))
-                .range([0, width]);
-    
-             yScale = d3ScaleLinear()
-                .domain(d3ArrayExtent(this.state.articleData, r=> r.ups))
-                .range([0, maxSize]);
-    
-            //const selectScaledX = datum => xScale(selectX(datum));
-            //const selectScaledY = datum => yScale(selectY(datum));
-            
-            xAxis = d3AxisBottom()
-            .scale(xScale)
-            .tickFormat(d3timeFormat("%B"));
-            // Add an axis for our y scale that has 3 ticks (FIXME: we should probably make number of ticks per axis a prop).
-            //yAxis = d3AxisLeft()
-            //.scale(yScale)
-            //.ticks(3);
-        }
-        
+        var width = 600,
+            height = 80;;
 
         return (<div>
             <p>Hello Reacted!</p>
-              
-                
-                {(this.state.articleData) && 
-                    <svg height={height} width={width} >
-                        <g className="xAxis" ref={node => d3Select(node).call(xAxis)} />
-                    </svg>
-                }
-            
-            <Circles {...Object.assign({},this.state, {"width": width, "height": height, "xScale":(v)=>{return xScale(v)}, "yScale":(v)=>{return yScale(v)}      })} />
+
+            <h3>Bubbles on a Timeline</h3>
+            <Circles {...Object.assign({}, this.state,{"width": width, "height": 100})} />
+            <h3>Monthly Histogram Bubbles</h3>
+            <CircleGrid {...Object.assign({}, this.state, { "width": width, "height": 500}) } />
+
+            <div id="tooltip" className="hidden">
+                <div className="close-container">
+                    <button id="close-box" className="btn btn-clear float-right"></button>
+                </div>
+                <div className="tool-toprow">
+                    <span id="date">4/18</span>
+                    <span className="tool-score" id="value">1k</span>
+                </div>
+                <div className="divider"></div>
+                <div className="tool-title" id="title">Title</div>
+                <a id="tool-link" target="_blank" className="btn" href="#">Link</a>
+
+            </div>
         </div>);
     }
 }

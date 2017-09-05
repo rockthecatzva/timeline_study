@@ -17,15 +17,19 @@ import { select as d3Select } from 'd3-selection';
 export default class TimelineCircleGrid extends React.Component {
     render() {
         var circles = [],
-            maxSize = 30;
+            minSize = 2,
+            maxSize = 30,
+            minDate = new Date(Math.min.apply(null, this.props.articleData.map(art=>art.date))).setDate(1),
+            maxDate = Math.max.apply(null, this.props.articleData.map(art=>art.date));
 
+        console.log(minDate, new Date(minDate).setDate(1))
         var xScale = d3ScaleTime()
-        .domain(d3ArrayExtent(this.props.articleData, r => r.date))
+        .domain([minDate, maxDate])
         .range([0, this.props.width]);
 
         var yScale = d3ScaleLinear()
             .domain(d3ArrayExtent(this.props.articleData, r => r.ups))
-            .range([0, maxSize]);
+            .range([minSize, maxSize]);
 
         var xAxis = d3AxisTop()
             .scale(xScale)
@@ -82,18 +86,22 @@ export default class TimelineCircleGrid extends React.Component {
             }
             articlesByMonth.push(tempSet);
             
-            //console.log(articlesByMonth);
 
             var xpos = 0,
                 ypos = 0,
-                minY = 30;
+                minY = 30,
+                prevRadius = 0;
 
             circles = articlesByMonth.map(function (col) {
                 xpos = col[0].date.setDate(1);
-            
+                
+                ypos = minY;
+                prevRadius = 0;
+
                 return col.map((art,i)=>{
-                    ypos = minY + (i*maxSize*2);
-                    //console.log(xpos, ypos);
+                    ypos +=(yScale(art.ups)+yScale(prevRadius));
+                    prevRadius = (art.ups);
+                    
                     return (<circle key={i} onClick={(e)=>{onMouse(e,art)}} cx={xScale(xpos)} cy={ypos} r={yScale(art.ups)} className="bubble" ></circle>);
                 });
                 

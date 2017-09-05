@@ -17,6 +17,7 @@ import { select as d3Select } from 'd3-selection';
 export default class TimelineCircles extends React.Component {
     render() {
         var circles = [],
+            minSize = 2,
             maxSize = 30;
 
         var xScale = d3ScaleTime()
@@ -25,7 +26,7 @@ export default class TimelineCircles extends React.Component {
 
         var yScale = d3ScaleLinear()
             .domain(d3ArrayExtent(this.props.articleData, r => r.ups))
-            .range([0, maxSize]);
+            .range([minSize, maxSize]);
 
         //const selectScaledX = datum => xScale(selectX(datum));
         //const selectScaledY = datum => yScale(selectY(datum));

@@ -16,8 +16,8 @@ import { timeFormat as d3timeFormat } from 'd3-time-format';
 
 import Circles from './TimelineCircles.js'
 import CircleGrid from './TimelineCircleGrid.js'
-
-
+import Bars from './TimelineBars.js'
+import BarPlanes from './TimelineBarPlanes.js'
 
 
 class App extends React.Component {
@@ -42,7 +42,7 @@ class App extends React.Component {
                 var data = await response.json();
 
                 try {
-                    var articles = await fetch("https://oauth.reddit.com/r/news/search.json?sort=top&t=year&limit=35&restrict_sr=on&syntax=cloudsearch", { headers: { 'Authorization': 'bearer ' + data.access_token } });
+                    var articles = await fetch("https://oauth.reddit.com/r/news/search.json?sort=best&t=year&limit=35&restrict_sr=on&syntax=cloudsearch", { headers: { 'Authorization': 'bearer ' + data.access_token } });
                     var articleData = await articles.json();
                     var finalData = articleData.data.children.map(r => {
                         return Object.assign({}, { "date": new Date(r.data["created_utc"] * 1000), "url": r.data["url"], "ups": r.data["ups"], "title": r.data["title"] });
@@ -73,6 +73,10 @@ class App extends React.Component {
             <Circles {...Object.assign({}, this.state,{"width": width, "height": 100})} />
             <h3>Monthly Histogram Bubbles</h3>
             <CircleGrid {...Object.assign({}, this.state, { "width": width, "height": 500}) } />
+            <h3>Bars</h3>
+            <Bars {...Object.assign({}, this.state, { "width": width, "height": 300}) } />
+            <h3>Bars on Planes</h3>
+            <BarPlanes {...Object.assign({}, this.state, { "width": width, "height": 300}) } />
 
             <div id="tooltip" className="hidden">
                 <div className="close-container">

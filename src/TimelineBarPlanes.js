@@ -17,25 +17,27 @@ import { select as d3Select } from 'd3-selection';
 export default class TimelineBarPlanes extends React.Component {
     render() {
         const MARGIN = {
-            BOTTOM: 150,
-            TOP: 40,
+            BOTTOM: 100,
+            TOP: 10,
             LEFT: 15,
-            RIGHT: 15
-        }
+            RIGHT: 60
+        },
+            PLANEOFFSET_X = 15,
+            PLANEOFFSET_Y = 15;
+
         var bars = [],
             maxSize = 30,
             numPlanes = 5,
-            planes =  [...Array(numPlanes)].map(()=>Array(0));//number of planes is static for now
-
-        
+            barW = 20,
+            planes = [...Array(numPlanes)].map(() => Array(0));//number of planes is static for now
 
         var xScale = d3ScaleTime()
             .domain(d3ArrayExtent(this.props.articleData, r => r.date))
-            .range([0, this.props.width-MARGIN.LEFT-MARGIN.RIGHT]);
+            .range([0, this.props.width - (MARGIN.LEFT + MARGIN.RIGHT)]);
 
         var yScale = d3ScaleLinear()
             .domain(d3ArrayExtent(this.props.articleData, r => r.ups))
-            .range([0, this.props.height-MARGIN.TOP]);
+            .range([0, this.props.height - (MARGIN.TOP+MARGIN.BOTTOM)]);
 
 
         var xAxis = d3AxisBottom()
@@ -43,45 +45,46 @@ export default class TimelineBarPlanes extends React.Component {
             .tickSize(8)
             .tickFormat(d3timeFormat("%B"));
 
-        let onMouse = function (e, d) {
-            let months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            console.log("mouse event ", e)
+        var xAxisAdditional = d3AxisBottom()
+            .scale(xScale)
+            .tickSize(2)
+            .tickFormat("");
 
+        var par = this;
+        let onMouse = function (e, d) {
             d3.selectAll(".bubble").attr("class", "bubble");
             d3.select(e.target).attr("class", "bubble highlight")
-            document.getElementById("tool-link").setAttribute("href", d.url);
-            document.getElementById("title").innerHTML = d.title;
-            document.getElementById("date").innerHTML = (months[new Date(d.date).getMonth()]) + "-" + new Date(d.date).getDate();
-            d3.select("#tooltip").classed("hidden", false);
-
-            d3.select("#tooltip")
-                .style("left", function () {
-                    let boxW = document.getElementById('tooltip').clientWidth / 2;
-                    return (e.pageX - boxW) + "px";
-                })
-                .style("top", function () {
-                    let boxH = document.getElementById('tooltip').clientHeight;
-                    return (e.pageY - boxH + 100) + "px";
-                })
-                .select("#value").text(Math.round(d.ups / 1000) + "k");
+            var left = e.pageX - document.getElementById('tooltip').clientWidth / 2,
+            top = e.pageY - document.getElementById('tooltip').clientHeight + 100,
+            score = Math.round(d.ups/1000)+"k";
+            par.props.toolTip(d.date, score, d.title, d.url, top, left);
         }
 
         if (this.props.articleData) {
             var par = this;
-            var sortedArts = this.props.articleData.slice().sort((a,b)=>{
-                if(a.ups>b.ups) return -1;
-                if(a.ups<b.ups) return 1;
-                return 0;});
-            bars = sortedArts.map(function (c, i) {
-                return (<rect key={i} onClick={(e) =>{onMouse(e,c)}} x={xScale(c.date)} y={par.props.height-yScale(c.ups)-MARGIN.BOTTOM} height={yScale(c.ups)} width="20" className="bar" ></rect>);
+            /*
+            var sortedArts = this.props.articleData.slice().sort((a, b) => {
+                if (a.ups > b.ups) return -1;
+                if (a.ups < b.ups) return 1;
+                return 0;
             });
+
+*/  
+            var bounds = d3ArrayExtent(this.props.articleData, r => r.ups),
+                range = Math.abs(bounds[0]-bounds[1]),
+                bandSize = range/(numPlanes-1);
+
+            this.props.articleData.forEach((art,i)=>{
+                var targetPlane = numPlanes-(Math.round(art.ups/bandSize));
+                planes[targetPlane].push(<rect key={i} onClick={(e) => { onMouse(e, art) }} x={xScale(art.date)} y={par.props.height - yScale(art.ups) - MARGIN.BOTTOM} height={yScale(art.ups)} width={barW} className="bar" ></rect>)
+            })
 
             var bar = 0,
                 planeCt = 0
-            
-            while (bar<=bars.length){
-                if(planeCt>=numPlanes){
-                    planeCt=0;
+
+            while (bar <= bars.length) {
+                if (planeCt >= numPlanes) {
+                    planeCt = 0;
                 }
                 planes[planeCt].push(bars[bar]);
 
@@ -93,12 +96,24 @@ export default class TimelineBarPlanes extends React.Component {
 
         return (<div>
             <svg height={this.props.height} width={this.props.width} >
-                <g className="xAxis" transform={"translate(0," + (this.props.height-MARGIN.BOTTOM) + ")"} ref={node => d3.select(node).call(xAxis)} />
-                {planes.map((p,i)=>{
-                    console.log(p,i);
-                    return (<g key={i} transform={"translate("+i+5+","+i*10+")"} className="bar-plane" >
-                    <g className="xAxis" transform={"translate(0," + (this.props.height-MARGIN.BOTTOM) + ")"} ref={node => d3.select(node).call(xAxis)} />
+                
+                {planes.map((p, i) => {
+                    var whichaxis = (i===planes.length-1) ? xAxis:xAxisAdditional;
+                    var mouseOver = function(e){
+                        document.querySelectorAll(".bar-plane").forEach((el,p)=>{
+                            if (p!=i) d3.select(el).attr("class","bar-plane blur");
+                        });
+                    }
+                    var mouseOut = function(e){
+                        document.querySelectorAll(".bar-plane").forEach((el,p)=>{
+                            d3.select(el).attr("class","bar-plane");
+                        });
+                    }
+                    return (<g key={i} onMouseLeave={mouseOut} onMouseEnter={mouseOver} transform={"translate(" + i * PLANEOFFSET_X + "," + i * PLANEOFFSET_Y + ")"} className="bar-plane" >
+                        <g className="xAxis" transform={"translate(0," + (this.props.height - MARGIN.BOTTOM) + ")"} ref={node => d3.select(node).call(whichaxis)} />
                         {p}</g>);
+                
+                    
                 })}
             </svg>
         </div>

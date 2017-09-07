@@ -64,23 +64,43 @@ class App extends React.Component {
 
     render() {
         var width = 600,
-            height = 80;;
+            height = 80;
+
+        var toolTip = function(date, score, title, url, top, left){
+                let months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                document.getElementById("tool-link").setAttribute("href", url);
+                document.getElementById("title").innerHTML = title;
+                document.getElementById("date").innerHTML = (months[new Date(date).getMonth()]) + "-" + new Date(date).getDate();
+                document.getElementById("tooltip").classList.remove("hide");
+                document.getElementById("tooltip").style.left = left;
+                document.getElementById("tooltip").style.top = top;
+                
+            }
+
+        var closeTooltip = function(){
+            document.getElementById("tooltip").className = "tooltip hide";
+            console.log("here");
+        }
+        
 
         return (<div>
-            <p>Hello Reacted!</p>
-
             <h3>Bubbles on a Timeline</h3>
-            <Circles {...Object.assign({}, this.state,{"width": width, "height": 100})} />
+            <p>This is copied over from my <a href="http://rockthecatzva.com/reddit-bubbles/" >previous project</a>. A simple circle time-line graph ideally suited for displaying only a few non-overlapping values.</p>
+            <Circles articleData={this.state.articleData} height={100} width={width} toolTip={toolTip} />
             <h3>Monthly Histogram Bubbles</h3>
-            <CircleGrid {...Object.assign({}, this.state, { "width": width, "height": 500}) } />
+            <p>Breaking out the cricle time-line into a histogram.</p>
+            <CircleGrid articleData={this.state.articleData} height={500} width={width} toolTip={toolTip} />
             <h3>Bars</h3>
-            <Bars {...Object.assign({}, this.state, { "width": width, "height": 300}) } />
+            <Bars articleData={this.state.articleData} height={300} width={width} toolTip={toolTip} />
             <h3>Bars on Planes</h3>
-            <BarPlanes {...Object.assign({}, this.state, { "width": width, "height": 300}) } />
+            <p>I know how much everyone likes 3d bar charts (sarcasm?), so I figured why not 2.5d? The data is split into several bands depending on the score. The articles with the highest scores are placed in the furthest plane as to not obstruct smaller scoring content. The use of planes does reduce some of the visual clutter. Mouse-over a bar to highlight its entire plane, click for more info.</p>
+            <BarPlanes articleData={this.state.articleData} height={300} width={width} toolTip={toolTip} />
 
-            <div id="tooltip" className="hidden">
+
+
+            <div id="tooltip" className="hide">
                 <div className="close-container">
-                    <button id="close-box" className="btn btn-clear float-right"></button>
+                    <button id="close-box" className="btn btn-clear float-right" onClick={closeTooltip} ></button>
                 </div>
                 <div className="tool-toprow">
                     <span id="date">4/18</span>

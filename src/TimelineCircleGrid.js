@@ -16,6 +16,13 @@ import { select as d3Select } from 'd3-selection';
 
 export default class TimelineCircleGrid extends React.Component {
     render() {
+        const MARGIN = {
+            BOTTOM: 150,
+            TOP: 40,
+            LEFT: 15,
+            RIGHT: 15
+        }
+
         var circles = [],
             minSize = 2,
             maxSize = 30,
@@ -25,7 +32,7 @@ export default class TimelineCircleGrid extends React.Component {
         console.log(minDate, new Date(minDate).setDate(1))
         var xScale = d3ScaleTime()
         .domain([minDate, maxDate])
-        .range([0, this.props.width]);
+        .range([MARGIN.LEFT, this.props.width-MARGIN.RIGHT]);
 
         var yScale = d3ScaleLinear()
             .domain(d3ArrayExtent(this.props.articleData, r => r.ups))
@@ -36,28 +43,14 @@ export default class TimelineCircleGrid extends React.Component {
             .tickSizeInner(300)
             .tickFormat(d3timeFormat("%B"));
 
-
+        var par = this;
         let onMouse = function(e,d){
-            let months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            console.log("mouse event ", e, e.pageX)
-            //d3.selectAll(".bubble").attr("class", "bubble blurfocus");
             d3.selectAll(".bubble").attr("class", "bubble");
             d3.select(e.target).attr("class", "bubble highlight")
-            document.getElementById("tool-link").setAttribute("href", d.url);
-            document.getElementById("title").innerHTML = d.title;
-            document.getElementById("date").innerHTML = (months[new Date(d.date).getMonth()]) + "-" + new Date(d.date).getDate();
-            d3.select("#tooltip").classed("hidden", false);
-  
-            d3.select("#tooltip")
-              .style("left", function () {
-                let boxW = document.getElementById('tooltip').clientWidth / 2;
-                return (e.pageX - boxW) + "px";
-              })
-              .style("top", function () {
-                let boxH = document.getElementById('tooltip').clientHeight;
-                return (e.pageY - boxH + 100) + "px";
-              })
-              .select("#value").text(Math.round(d.ups / 1000) + "k");
+            var left = e.pageX - document.getElementById('tooltip').clientWidth / 2,
+            top = e.pageY - document.getElementById('tooltip').clientHeight + 100,
+            score = Math.round(d.ups/1000)+"k";
+            par.props.toolTip(d.date, score, d.title, d.url, top, left);
         }
 
         if (this.props.articleData.length) {
